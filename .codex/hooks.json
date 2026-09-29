@@ -1,0 +1,54 @@
+{
+  "_comment": "Codex hook wiring. Same scripts as .claude/settings.json; the scripts parse both agents' payloads and self-filter, so no matcher is set. UNVERIFIED on this Codex version -- see STATUS.md 'Known issues' for the 30-second probe. Safety does not depend on this file: .githooks/pre-commit and src/brca/compute_guard.py enforce the critical rules for every agent.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'exec \"$(git rev-parse --show-toplevel)/.claude/hooks/session-start.sh\"'",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'exec \"$(git rev-parse --show-toplevel)/.claude/hooks/guard-data-commit.sh\"'",
+            "timeout": 60
+          },
+          {
+            "type": "command",
+            "command": "bash -c 'exec \"$(git rev-parse --show-toplevel)/.claude/hooks/guard-login-node.sh\"'",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'exec \"$(git rev-parse --show-toplevel)/.claude/hooks/format.sh\"'",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'exec \"$(git rev-parse --show-toplevel)/.claude/hooks/stop-gate.sh\"'",
+            "timeout": 300
+          }
+        ]
+      }
+    ]
+  }
+}

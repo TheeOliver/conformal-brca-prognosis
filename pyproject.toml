@@ -1,0 +1,59 @@
+[project]
+name = "conformal-brca-prognosis"
+version = "0.1.0"
+description = "Trustworthy prognostic modelling for breast cancer: Bayesian survival analysis and conformal prediction on METABRIC"
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.2",
+    "scipy>=1.11",
+    "pyyaml>=6.0",
+    "matplotlib>=3.8",
+    # Classical + ML survival: Cox, Random Survival Forest, and every metric
+    # in the Evaluation section (Uno C, Brier, IBS, time-dependent AUC).
+    "scikit-learn>=1.4",
+    "scikit-survival>=0.23",
+    # Bayesian Weibull/AFT. arviz carries the MCMC diagnostics and the
+    # InferenceData container we persist fits into.
+    "pymc>=5.16",
+    "arviz>=0.18",
+]
+
+# NOTE: there is intentionally no conformal-prediction dependency.
+# No Python library implements conformal survival prediction with censoring
+# (mapie/crepes/puncc do not); the reference implementations for Candes 2023
+# and Gui 2024 are R. src/brca/conformal/ is therefore hand-written and must
+# be unit-tested against closed-form coverage. See .claude/rules/conformal.md.
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.6",
+    "nbstripout>=0.7",
+    "ipykernel>=6.29",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/brca"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["references", "notebooks"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "NPY", "RUF"]
+# NPY002 bans np.random.* global state -- that is a reproducibility rule here,
+# not a style preference. See .claude/rules/reproducibility.md.
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"
+markers = [
+    "slow: needs real compute (MCMC sampling, full RSF). Excluded from the Stop hook gate; run these under sbatch.",
+]

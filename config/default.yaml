@@ -1,0 +1,94 @@
+# Single source of truth for every number that affects results.
+# Nothing in src/ or scripts/ may hard-code any of these.
+# Enforced by .claude/rules/reproducibility.md.
+
+seed: 8927 # one global seed; all RNGs are derived from it
+
+# --- Data source ---------------------------------------------------------------
+# Public METABRIC study on cBioPortal (clinical tables only). Fetched by
+# scripts/00_download_data.py. See docs/metabric-data-dictionary.md.
+data_source:
+  provider: cbioportal
+  study_id: brca_metabric
+  raw_subdir: cbioportal_brca_metabric
+  required_patient_attributes:
+    [AGE_AT_DIAGNOSIS, LYMPH_NODES_EXAMINED_POSITIVE, ER_IHC, CLAUDIN_SUBTYPE,
+     OS_MONTHS, OS_STATUS, VITAL_STATUS, RFS_MONTHS, RFS_STATUS]
+  required_sample_attributes: [TUMOR_SIZE, GRADE, ER_STATUS, PR_STATUS, HER2_STATUS]
+
+# --- Experimental design -----------------------------------------------------
+# Three-way split. The calibration set exists ONLY so conformal prediction has
+# data that no model has ever seen during fitting. See docs/experimental-design.md.
+split:
+  train: 0.50
+  calibration: 0.25
+  test: 0.25
+  stratify_by: event # keep the event rate comparable across all three sets
+
+# --- Feature sets ------------------------------------------------------------
+# The two arms of RQ2. Both run on IDENTICAL splits, so any difference in
+# performance is attributable to the features, not to the partition.
+feature_sets:
+  clinical:
+    - age_at_diagnosis
+    - tumor_size
+    - tumor_grade
+    - lymph_nodes_positive
+    - er_status
+    - pr_status
+    - her2_status
+  clinical_molecular: # clinical + PAM50, defined as clinical plus the line below
+    - pam50_subtype
+
+# --- Outcome -----------------------------------------------------------------
+outcome:
+  time_column: survival_months # months, per METABRIC convention
+  event_column: event # bool: True = event observed, False = right-censored
+  administrative_censoring_months: 300.0
+
+# --- Conformal prediction ----------------------------------------------------
+# alpha is MISCOVERAGE: 0.20 -> 80% nominal coverage.
+conformal:
+  alphas: [0.20, 0.10, 0.05]
+  # Subgroups for conditional-coverage reporting. Marginal coverage can be
+  # perfect while a subgroup is badly under-covered -- that is the equity
+  # failure mode flagged in wang_2025. See .claude/rules/evaluation-metrics.md.
+  coverage_subgroups:
+    - pam50_subtype
+    - er_status
+
+# --- Evaluation --------------------------------------------------------------
+evaluation:
+  # Interior percentiles of observed follow-up. IPCW weights blow up at the
+  # tails, so the grid must stay strictly inside the follow-up range of BOTH
+  # the training and the evaluation set.
+  time_grid_percentiles: [10, 20, 30, 40, 50, 60, 70, 80, 90]
+  bootstrap_replicates: 1000
+
+# --- Bayesian sampler --------------------------------------------------------
+mcmc:
+  chains: 4
+  tune: 1000
+  draws: 1000
+  target_accept: 0.95
+  # Acceptance gate -- a fit violating any of these is NOT reportable.
+  # See .claude/rules/mcmc-diagnostics.md.
+  diagnostics:
+    max_rhat: 1.01
+    min_ess_bulk: 400
+    min_ess_tail: 400
+    max_divergences: 0
+
+# --- Random Survival Forest --------------------------------------------------
+# Deliberately untuned: instructions.md rules out hyperparameter optimisation.
+rsf:
+  n_estimators: 500
+  min_samples_leaf: 15
+  max_features: sqrt
+
+# --- Paths -------------------------------------------------------------------
+paths:
+  raw: data/raw
+  interim: data/interim
+  processed: data/processed
+  outputs: outputs

@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# Agent-independent backstop. Runs for every committer -- Claude, Codex, or a
+# human at a terminal -- so the data rule does not depend on any agent's hook
+# configuration. Installed by `make setup` (git config core.hooksPath .githooks).
+set -uo pipefail
+cd "$(git rev-parse --show-toplevel)" || exit 1
+
+staged="$(git diff --cached --name-only --diff-filter=ACMR)"
+[ -n "$staged" ] || exit 0
+fail=0
+
+# 1. Patient data and generated outputs never enter git (CLAUDE.md / AGENTS.md
+#    convention 2). METABRIC is access-controlled and history is permanent.
+bad="$(printf '%s\n' "$staged" \
+  | grep -E '^(data|outputs)/|\.(csv|tsv|parquet|nc|feather|xlsx|h5|pkl)$' \
+  | grep -vE '(^|/)\.gitkeep$|^data/raw/CHECKSUMS\.sha256$' || true)"
+if [ -n "$bad" ]; then
+  echo "pre-commit: BLOCKED -- these must never be committed:" >&2
+  printf '  %s\n' $bad >&2
+  echo "  Unstage with: git restore --staged <path>" >&2
+  fail=1
+fi
+
+# 2. Notebooks must be stripped: cell outputs can embed patient-level rows.
+for nb in $(printf '%s\n' "$staged" | grep -E '\.ipynb$' || true); do
+  if git show ":$nb" | grep -q '"output_type"'; then
+    echo "pre-commit: BLOCKED -- $nb has cell outputs. Run: uv run nbstripout \"$nb\" && git add \"$nb\"" >&2
+    fail=1
+  fi
+done
+
+# 3. Staged Python must be lint-clean (Codex edits are not auto-formatted).
+py="$(printf '%s\n' "$staged" | grep -E '\.py$' || true)"
+if [ -n "$py" ] && [ -d .venv ]; then
+  if ! uv run --quiet ruff format --check $py >/dev/null 2>&1 || ! uv run --quiet ruff check $py >/dev/null 2>&1; then
+    echo "pre-commit: BLOCKED -- ruff fails on staged Python. Run: make format, then re-stage." >&2
+    fail=1
+  fi
+fi
+
+# 4. Nudge, not block: code changes should come with a STATUS.md update.
+if printf '%s\n' "$staged" | grep -qE '^(src|scripts|tests|config)/' \
+   && ! printf '%s\n' "$staged" | grep -qx 'STATUS.md'; then
+  echo "pre-commit: note -- code is staged without STATUS.md. The other agent will not know about this change." >&2
+fi
+
+exit $fail
