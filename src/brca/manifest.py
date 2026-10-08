@@ -13,9 +13,9 @@ from tempfile import NamedTemporaryFile
 from typing import Any
 
 
-def sha256_file(path: Path) -> str:
+def sha256_file(path: Path | str) -> str:
     """Hash the exact bytes used by a stage."""
-    with path.open("rb") as handle:
+    with Path(path).open("rb") as handle:
         return hashlib.file_digest(handle, "sha256").hexdigest()
 
 

@@ -15,8 +15,10 @@
 
 set -euo pipefail
 
-STAGE="${1:?usage: sbatch scripts/slurm/run_stage.sh <stage NN, e.g. 03>}"
-CONFIG="${2:-config/default.yaml}"
+STAGE="${1:?usage: sbatch scripts/slurm/run_stage.sh <NN|audit|eda|check|test-all> [config] [extra args]}"
+shift
+CONFIG="${1:-config/default.yaml}"
+if [ "$#" -gt 0 ]; then shift; fi
 
 cd "${SLURM_SUBMIT_DIR:-$PWD}"
 mkdir -p logs
@@ -28,6 +30,13 @@ export MKL_NUM_THREADS=1
 export OPENBLAS_NUM_THREADS=1
 
 shopt -s nullglob
+case "$STAGE" in
+  check) make check; exit ;;
+  test-all) make test-all; exit ;;
+  audit) uv run python scripts/audit_data.py --config "$CONFIG" "$@"; exit ;;
+  eda) uv run python scripts/eda.py --config "$CONFIG" "$@"; exit ;;
+  uncertainty) uv run python scripts/training_uncertainty.py --config "$CONFIG" "$@"; exit ;;
+esac
 matches=(scripts/"${STAGE}"_*.py)
 if [ ${#matches[@]} -ne 1 ]; then
   echo "expected exactly one script for stage '${STAGE}', found: ${matches[*]:-none}" >&2
@@ -35,4 +44,4 @@ if [ ${#matches[@]} -ne 1 ]; then
 fi
 
 echo "job ${SLURM_JOB_ID:-local} :: stage ${STAGE} :: ${matches[0]} :: $(date -Is)"
-uv run "${matches[0]}" --config "${CONFIG}"
+uv run python "${matches[0]}" --config "${CONFIG}" "$@"
