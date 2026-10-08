@@ -6,11 +6,10 @@ update it at the end of every session that changed files. Procedure:
 
 ## Snapshot
 
-- **Phase:** 1 — stage 02 complete on synthetic data; stage 01 blocked on four decisions
-- **Last updated:** 2026-09-29 by Codex
-- **Next up:** user decides endpoint, PAM50 levels, missing-data handling and admin censoring;
-  then implement stage 01 against `data/raw/cbioportal_brca_metabric/`. Archive the synthetic
-  split/manifests before freezing a real-data split. Setup and stage 02 are still uncommitted.
+- **Phase:** 6 — primary analysis complete; post hoc uncertainty reliability extension audited
+- **Last updated:** 2026-10-08 by Codex
+- **Next up:** user checkpoint commits/PR (`docs/git-checkpoints.md`), supervisor review of
+  `docs/uncertainty-reliability.md`, thesis integration and clean-commit numerical reproduction.
 
 ## Active claims
 
@@ -18,7 +17,6 @@ Claim before starting non-trivial work; remove your row when you hand off.
 
 | Task | Agent | Branch | Since |
 | --- | --- | --- | --- |
-| — | — | — | — |
 
 ## Milestones
 
@@ -28,59 +26,102 @@ Claim before starting non-trivial work; remove your row when you hand off.
 - [x] Agent-independent guards: `.githooks/pre-commit`, `src/brca/compute_guard.py`
 - [x] Environment: uv, Python 3.12, `uv.lock`
 - [x] Synthetic fixture + scaffold tests (`make check` → 19 passed)
-- [ ] First commit — *user*
+- [x] First commit — *user* (`d22268b`, now on `main` / `origin/main`)
 
 **Phase 1 — Data**
 - [x] METABRIC clinical data acquired: cBioPortal public study, 1,981 usable patients
       (`make download`; `docs/metabric-data-dictionary.md`)
-- [ ] Endpoint decided: overall vs disease-specific survival vs relapse (see Open questions)
-- [ ] Stage 01 `prepare_data` + tests
+- [x] Endpoint decided: DSS primary; OS sensitivity (user, 2026-09-29)
+- [x] Reproducible aggregate data audit before cohort decisions
+- [x] Stage 01 `prepare_data` + tests
 - [x] Stage 02 `make_splits` + tests (synthetic frozen `splits.json`, disjointness asserted)
+- [x] Freeze the real-data split after cohort decisions
+- [x] Training-set EDA: predictor distributions, missingness, censoring and survival patterns
 
 **Phase 2 — Models** (each for *both* feature sets)
-- [ ] Cox PH, with proportional-hazards check
-- [ ] Bayesian Weibull AFT: prior predictive, diagnostics gate, PPC, prior sensitivity
-- [ ] Random Survival Forest (untuned, by design)
+- [x] Cox PH, with proportional-hazards check
+- [x] Bayesian Weibull AFT: prior predictive, diagnostics gate, PPC, prior sensitivity
+- [x] Random Survival Forest (untuned, by design)
 
 **Phase 3 — Conformal**
-- [ ] Censoring adaptation chosen and justified (see Open questions)
-- [ ] Split CP with finite-sample quantile + coverage unit tests
-- [ ] `conformal-validity-auditor` review — by the agent that did *not* write it
+- [x] Censoring adaptation chosen and justified (see `docs/conformal-methods.md`)
+- [x] Split CP with finite-sample quantile + coverage unit tests
+- [x] `conformal-validity-auditor` review — independent mathematical and caller reviews
 
 **Phase 4 — Evaluation**
-- [ ] Uno C, Brier, IBS, td-AUC with bootstrap CIs on a shared interior time grid
-- [ ] Coverage + width at 80/90/95%, marginal and by PAM50 / ER subgroup
+- [x] Uno C, Brier, IBS, td-AUC with bootstrap CIs on a shared interior time grid
+- [x] Coverage + width at 80/90/95%, marginal and by PAM50 / ER subgroup
 
-**Phase 5 — Answers** (each links to its `outputs/metrics/*.json`)
-- [ ] RQ1 · [ ] RQ2 · [ ] RQ3 · [ ] RQ4 · [ ] RQ5 · [ ] RQ6
+**Phase 5 — Answers** (generated artifacts remain ignored)
+- [x] RQ1: clinical prediction — [performance](outputs/metrics/performance.json)
+- [x] RQ2: added PAM50 information — [paired comparisons](outputs/metrics/rq2_feature_set_comparison.json)
+- [x] RQ3: model families — [performance](outputs/metrics/performance.json)
+- [x] RQ4: Bayesian uncertainty — [answers and evidence](outputs/metrics/research_answers.json)
+- [x] RQ5: coverage with width — [coverage report](outputs/metrics/conformal_coverage.json)
+- [x] RQ6: discrimination versus uncertainty — [joint evidence](outputs/metrics/research_answers.json)
 
 **Phase 6 — Thesis artefacts**
-- [ ] Figures and tables exported per `docs/figure-style.md`
-- [ ] `leakage-auditor`, `stats-reviewer`, `reproducibility-checker` all clean
+- [x] Figures and tables exported per `docs/figure-style.md`: 137 PDF/PNG pairs, 94 LaTeX tables
+- [x] `leakage-auditor`, `stats-reviewer`: independent reviews completed, findings corrected
+- [x] `reproducibility-checker`: 906 artifact/source integrity checks passed
+- [ ] Strict clean-commit numerical reproduction sign-off: archived dirty sources verified,
+      but no second real-data numerical run or clean-commit reproduction is claimed
+
+**Post hoc published-method comparator**
+- [x] Qin et al. two-sided bootstrap CPI with Cox working model, train-only refits and
+      inverse-censoring event resampling; synthetic censored coverage test and independent review
+- [x] Separate four-arm DSS/OS × feature-set SLURM evaluation, 80/90/95% intervals at
+      120/300 months, with coverage bounds, IPCW where supported, width and subgroup reports
+
+**Post hoc uncertainty reliability improvement**
+- [x] Conservative signed-score lower bounds across all three model families, with
+      finite-rank, stratification and censoring-coverage synthetic tests
+- [x] Fixed-ridge Qin sensitivity: matched original/bootstrap estimators and strict
+      1,000/1,000 refit requirement; training support and failure diagnostics
+- [x] SLURM 1338: 96 interval settings and paired method/feature comparisons on frozen
+      patients, with original reference statistics verified before comparison
+- [x] SLURM 1341: 2,523 independent integrity checks; full aggregate report and four
+      PDF/PNG comparison pairs; final `make check` 228 passed (232 total in job 1337)
+
+Results: [thesis report](outputs/reports/thesis_results.md). Verification and qualifications:
+[final review](docs/final-review.md), [independent provenance review](docs/final-provenance-review.md).
 
 ## Blockers & open questions
+
+**2026-09-29 resolution:** the four stage-01 questions below are superseded by the user's
+DSS/OS choice and delegated decisions in `docs/analysis-decisions.md`: retain claudin-low,
+NC → unknown, train-only imputation, full follow-up. They no longer block the pipeline.
 
 - ~~**BLOCKER — METABRIC access.**~~ Resolved 2026-09-29: cBioPortal `brca_metabric` is a
   public study with all needed clinical fields + PAM50 + OS/RFS. *(Claude)* Simona used a
   different distribution of the same study (Kaggle, 1,904 patients); her cohort definition
   reproduces on ours (same 2 exclusions, 32.6% vs 32.7% DSS event rate). See
   `docs/metabric-data-dictionary.md` § Cross-check.
-- **Endpoint — blocks stage 01.** 497 of 1,144 deaths (43%) are from other causes, so overall
+- ~~**Endpoint — blocks stage 01.**~~ Resolved: DSS primary, OS sensitivity. Historical question:
+  497 of 1,144 deaths (43%) are from other causes, so overall
   vs disease-specific survival will give materially different models; relapse-free is also
   available. Decide with the supervisor. **Precedent: Simona used disease-specific** (OS only
   as sensitivity). *Owner: user.*
-- **PAM50 levels — blocks stage 01.** Data has claudin-low (218) and NC (< 10) beyond the 5
+- ~~**PAM50 levels — blocks stage 01.**~~ Resolved: retain claudin-low, NC → unknown.
+  Historical question: data has claudin-low (218) and NC (< 10) beyond the 5
   schema levels. Proposal: claudin-low as its own level (**as Simona did**), NC (6) →
   `unknown`. *Owner: user.*
-- **Missing predictors — blocks stage 01.** 166 of 1,981 lack a predictor (grade 87, nodes 76,
+- ~~**Missing predictors — blocks stage 01.**~~ Resolved: training-only numeric median plus
+  missingness indicators; categorical unknown. Historical question: 166 of 1,981 lack a predictor (grade 87, nodes 76,
   size 25). Complete-case or train-only imputation? Simona imputed (MICE for size, mode for
   grade), apparently before her split — ours must be train-only. *Owner: user.*
-- **Admin censoring.** Config says 300 months; follow-up runs to 355. Simona did not truncate
+- ~~**Admin censoring.**~~ Resolved: retain full follow-up for fitting; restrict the primary
+  conformal target to 300 months, with prespecified 120-month sensitivity. Historical question:
+  config says 300 months; follow-up runs to 355. Simona did not truncate
   and capped IBS at 120 months. Confirm. *Owner: user.*
-- **AFT likelihood (Phase 2).** Simona found Weibull the worst-fitting AFT family by AIC
+- ~~**AFT likelihood (Phase 2).**~~ Resolved: Weibull primary; lognormal and alternative-prior
+  training sensitivities completed, with PPCs and explicit adequacy limitations. Historical question:
+  Simona found Weibull the worst-fitting AFT family by AIC
   (log-normal best). The brief asks for Bayesian Weibull/AFT — compare against log-normal by
   posterior predictive checks before committing. *Owner: user + whoever builds the model.*
-- **Conformal censoring adaptation.** Candès-style lower predictive bound, IPCW-weighted scores,
+- ~~**Conformal censoring adaptation.**~~ Resolved: conservative restricted-time score envelope,
+  with separate approximate IPCW sensitivity; mathematical and caller reviews completed.
+  Historical question: Candès-style lower predictive bound, IPCW-weighted scores,
   or Gui adaptive cut-offs — see `docs/conformal-methods.md`. Decide before Phase 3.
 - ~~**Ask Simona:** preprocessing, missing-PAM50 handling, endpoint.~~ Answered by her thesis
   (`references/simona.md`) except NC handling and whether her imputation was fit before the
@@ -108,6 +149,21 @@ Claim before starting non-trivial work; remove your row when you hand off.
 | 2026-09-29 | Codex | Exact sizes use largest-remainder rounding; event counts use bounded proportional allocation, with both classes required in each set | deterministic integer allocation, including feasible rare-event cohorts |
 | 2026-09-29 | Codex | Compatible stage-02 reruns reuse without resampling; changed cohort bytes or split protocol fail without overwrite | protect downstream fits/calibration; other config changes get a new manifest hash |
 | 2026-09-29 | Codex | Synthetic mode is explicit; dirty/unborn Git runs require `--allow-dirty` and record the provenance limitation | development checks are not thesis results |
+| 2026-09-29 | user | DSS primary, OS sensitivity; remaining cohort choices delegated | explicit endpoint decision |
+| 2026-09-29 | Codex | Retain claudin-low; NC/missing subtype → unknown; training-only median numeric imputation with indicators and categorical unknown; retain full follow-up | retain eligible patients without fitting preprocessing outside training; `docs/analysis-decisions.md` |
+| 2026-09-29 | Codex | All stages 01–06 implemented and run on real data; supersedes prior stub decisions | 1,979 eligible patients, frozen 989/495/495 split |
+| 2026-09-29 | Codex | 12 main fits across endpoints/feature arms plus 4 DSS Bayesian sensitivities; no tuning on test | registered common comparison and training-only adequacy checks |
+| 2026-09-29 | Codex | Seeded bounded prior-centered MCMC starts with finite-gradient checks; gates and priors unchanged | resolved a diagnosed numerical initialization failure before test access |
+| 2026-09-29 | Codex | Conservative CP targets min(T, 300 months), with 120-month sensitivity; finite ranks within primary DSS strata and worst-stratum threshold | censoring score envelope preserves conservative comparison under stated exchangeability assumptions |
+| 2026-09-29 | Codex | IPCW is a separate approximation and unavailable below training censoring support 0.05; always report observable bounds and width | avoid asserted latent coverage in unsupported tails |
+| 2026-09-29 | Codex | Freeze source/config/model/calibration plan before test access; paired 1,000-draw bootstrap preserves primary DSS strata | no post-test changes to fitting/calibration; fixed-fit uncertainty is explicitly qualified |
+| 2026-09-29 | Codex | Actual IBS integration grid is 28.973–120 months, selected using training data | report the evaluated range exactly |
+| 2026-09-29 | Codex | Dirty runs retain immutable source/config/lock archives; integrity verification is distinct from clean-commit numerical reproduction | user reserves commits; final audit cannot claim an unperformed reproduction run |
+| 2026-10-08 | Codex | Qin's two-sided Cox bootstrap CPI is post hoc and isolated under `outputs/qin_exploratory/`; it reuses frozen train/Cox fits and verified test cache, not the calibration patients | original primary plan/results stay authoritative; test reuse cannot select a new primary method |
+| 2026-10-08 | Codex | Qin uses 1,000 requested refits with a 90% success gate, marginal reverse-KM `G(t-)` event weights and fixed train-only preprocessing | paper's general right-censoring algorithm with explicit finite-sample and censoring-assumption limitations |
+| 2026-10-08 | Codex | Separate exploratory reliability plan fixes ridge alpha 1.0, 1,000/1,000 required refits, 100-resample unpenalized diagnostic pilot; original Qin unchanged | remove conditioning on successful refits while preserving the original comparator and its limitations |
+| 2026-10-08 | Codex | Add signed-score conservative lower bounds for all 12 frozen fits, with worst-primary-event-stratum thresholds; same alpha/horizon grid | answer T ≥ L under the restricted target without unstable censoring weights; this is a different one-sided question |
+| 2026-10-08 | Codex | All new results remain post hoc; preserve original plans, fits and metrics; immutable source/input plan and preparation binding precede additional test-cache read | reuse cannot validate test-driven selection; no replacement of primary 300-month DSS analysis |
 
 ## Known issues
 
@@ -119,12 +175,164 @@ Claim before starting non-trivial work; remove your row when you hand off.
 - **Codex user-level skills overlap.** `~/.codex/skills/` has `conventional-commits` and
   `git-pr-workflow`; the repo ships `conventional-commits` and `git-commit-and-pr`. Inside this
   repo the repo versions are authoritative.
-- **`make check` is weak for now.** Tests cover config, schema and guards — not the science.
-  It becomes meaningful when conformal coverage tests land (Phase 3).
+- ~~**`make check` is weak for now.**~~ Superseded 2026-09-29: 171 fast tests and 173 total
+  tests pass, including censoring/coverage, model, metric, partition and cache-integrity tests.
+  Historical note: tests initially covered only config, schema and guards.
 - **PyMC 6.3.2 / arviz 1.3.0** resolved — newer than the reference notebooks (5.28 / 1.1).
   Every API the rules name was verified present; notebook idioms may still not transfer.
+- **Final integration checks:** no clean-commit numerical reproduction and no LaTeX-engine
+  compilation. Source/artifact integrity, table structure and PDF/PNG layout were checked;
+  these do not replace either missing check. Absolute artifact paths require revalidation
+  when moving the analysis. See `docs/final-provenance-review.md`.
+- **Professor's conformal-method requirement (updated 2026-10-08):** the primary score
+  envelope remains an adaptation, and the new post hoc comparator directly implements
+  Qin's two-sided Cox bootstrap variant. Candès/Gui have not been implemented. Supervisor
+  agreement is still needed before claiming the proposal's method requirement is met;
+  Qin's DSS censoring support and molecular refit stability are weak.
 
 ## Handoff log
+
+### 2026-10-08 — Codex — Survival-uncertainty reliability goal achieved
+- **Changed:** added conservative lower bounds, fixed-ridge Qin refits, training support
+  diagnostics and isolated stage-05 orchestration. Added complete paired comparison report,
+  four PDF/PNG figures, reproducible export/audit scripts and method/results documentation
+  in `docs/uncertainty-reliability.md`; Git/PR drafts updated.
+- **Verified:** SLURM 1337 ran `make format`, `make check` (228 passed), `make test-all`
+  (232 passed). Real job 1338 completed in 5m57s: all 4,000 ridge refits and 96 interval
+  cells. Job 1341 passed final `make check` (228), independent audit (2,523/2,523), and
+  aggregate-only exports. Four PNGs visually inspected; `git diff --check` passed.
+  Independent lower-score, numerical-method, leakage and statistical reviews found no
+  remaining confirmed implementation defect. Original result hashes remain unchanged.
+- **Results:** previous Qin refits totaled 3,829/4,000; ridge completes all. At 90%
+  nominal/120 months, DSS lower-bound widths shrink by 3.8–8.8 months, but observed
+  coverage ranges cross nominal and sets still span 85.5–90.1 months. OS tradeoffs are
+  mixed. DSS 300-month IPCW remains unsupported; full Qin event-pool ESS remains 12.8.
+  Some PAM50 subgroups retain low realised coverage despite broad intervals.
+- **Not done / caveats:** post hoc reused-test comparisons, different one-sided question,
+  no individual clinical guarantee, no independent external validation or clean-commit
+  numerical reproduction. Jobs 1334–1336 and 1339–1340 stopped on test/formatting issues,
+  corrected before the successful runs above. No commits, pushes or PR creation.
+- **Next:** use `docs/git-checkpoints.md` for reviewable commits, then review the full
+  comparison with the supervisor before considering any new primary method or horizon.
+
+### 2026-10-08 — Codex — Qin bootstrap CPI exploratory comparator
+- **Changed:** added Qin et al. Cox bootstrap CPI, isolated stage-05 mode/config, synthetic
+  tests and `docs/qin-exploratory.md`. The original evaluation plan and coverage JSON retain
+  their original manifest hashes. Job 1329 was canceled during review; its plan is archived.
+- **Verified:** independent read-only method/leakage review found no remaining confirmed
+  defect after corrections. SLURM 1332: `make check` 176 passed, `make test-all` 179 passed.
+  SLURM 1333 completed four arms, 24 interval cells, a source/input-bound exploratory plan
+  and aggregate manifest. Original primary plan/coverage SHA-256 values match their manifest.
+- **Findings:** 90% DSS 300-month Qin median widths are 272.1/270.3 months for clinical/
+  molecular, versus primary 274.4/273.1. DSS 300-month IPCW remains unavailable; 323
+  observed DSS events yield only 12.8 inverse-weighted effective event-pool size. The DSS
+  molecular bootstrap passed exactly 900/1,000 refits, the preset minimum. See the report.
+- **Caveats:** post hoc test reuse, marginal independent-censoring assumption, PH departures,
+  weak DSS tail and dirty-tree source archive prevent a confirmatory validity claim.
+- **Next:** user commits the existing pipeline checkpoints then this Qin checkpoint, seeks
+  supervisor review of exploratory method status, and performs clean-commit reproduction.
+
+### 2026-10-08 — Codex — Aggregate results and model orientation
+- **Changed:** documented a read-only sense check for the user's model/metric overview;
+  no statistical code, config, patient data or saved results changed.
+- **Verified:** reviewed `outputs/reports/thesis_results.md`, aggregate EDA/performance/
+  coverage JSON, the frozen evaluation plan, method documents and the prior independent
+  audit. SLURM 1325 `make check` passed: Ruff clean, 171 tests passed, 2 slow deselected.
+  No new fit or numerical result was computed in this review.
+- **Assessment:** results are internally coherent for exploratory internal validation:
+  DSS Uno C is about 0.686–0.705; molecular gains are modest; primary 90% conservative
+  intervals are about 271–274 months wide at a 300-month horizon. Heavy censoring makes
+  exact latent coverage unobservable. Four Cox PH diagnostics flag departures, Weibull
+  family/prior sensitivity matters, and DSS tail IPCW is unsupported at 300 months.
+- **Caveats:** independent integrity review does not establish clinical utility, external
+  validity or clean-commit numerical reproduction. Explain the distinction between
+  ranking, probability error, posterior uncertainty and coverage bounds to the user.
+- **Next:** user checkpoint commits/PR and thesis integration; obtain supervisor agreement
+  on the conservative conformal adaptation before calling the proposal fully matched.
+
+### 2026-09-29 — Codex — Checkpoint 5: thesis exports and final handoff
+- **Changed:** completed all six generated RQ answers and the thesis report; exported 137
+  PDF/PNG pairs and 94 LaTeX tables; added reusable provenance audit, runbook, review records
+  and all five checkpoint command/PR drafts. Closed this session's claim.
+- **Verified:** export job 1224 recorded 378 artifacts; independent artifact review 1226
+  checked dimensions, numerical consistency and table structure. Independent provenance
+  job 1230 passed 906 checks. Integrated SLURM 1231 ran `make format`, `make check`
+  (171 passed), `make test-all` (173 passed), and
+  `uv run python scripts/audit_results.py --require-exports --output outputs/reports/provenance_audit.json`
+  (906 checks, zero failures). Final documentation-only edits followed; no statistical or
+  rendering source changed. Independent review confirmed checkpoint staging covers all
+  intended code/config/test/docs files and excludes patient artifacts.
+- **Review:** independent leakage, conformal, statistical, orchestration and artifact
+  findings resolved. Failed initialization and audit-development checks remain documented.
+  No model, preprocessing, calibration or statistical evaluation choices changed after test access.
+- **Caveats:** this is internal validation with PH departures, broad prediction intervals,
+  exploratory subgroup comparisons and unsupported DSS tail IPCW. Integrity checks verify
+  archived dirty sources, not clean-commit numerical reproduction. LaTeX compilation and
+  optional Codex hook integration remain unverified. Nothing staged, committed or pushed.
+- **Next:** user runs `docs/git-checkpoints.md`, integrates exports in the thesis and performs
+  clean-commit reproduction; preserve the frozen original analysis and its manifests.
+
+### 2026-09-29 — Codex — Checkpoint 4: frozen final evaluation
+- **Verified:** SLURM 1211 completed stage 05 after `make check` (168 passed) and
+  `make test-all` (170 passed). Twelve models evaluated on 495 patients, with paired
+  1,000-replicate primary-event-stratified bootstrap; every performance replicate succeeded.
+  Saved 168 interval-report cells, subgroup summaries and paired uncertainty comparisons.
+- **Review:** independent aggregate statistical checks (1217/1219), numerical/table consistency
+  review (1218), and provenance audit (1214: 272 checks, zero errors). No invalidating
+  statistical finding. Final exports undergo a separate visual/freshness pass.
+- **Findings:** modest primary DSS PAM50 discrimination gains for RSF and Weibull; Cox gain
+  uncertain. Primary conservative 90% median widths 270.8–274.4 months at a 300-month
+  restricted horizon. Favorable marginal realised-coverage bounds do not imply useful
+  precision or subgroup guarantees. DSS300 IPCW support is insufficient and stays unavailable.
+- **Caveats:** exploratory comparisons, fixed-fit bootstrap, PH departures, net-DSS/competing
+  death assumptions and weak tail support are explicit in the generated results report.
+- **Next:** finish PDF/PNG/LaTeX and generated RQ report checks, then close the active claim.
+
+### 2026-09-29 — Codex — Checkpoint 3: calibrated restricted survival intervals
+- **Changed:** conservative score-envelope CP for restricted event time, stratified finite
+  ranks with a worst-stratum threshold, separate approximate IPCW sensitivity, coverage
+  bounds/width/subgroup summaries and fixed-primary-event-stratum bootstrap intervals.
+- **Verified:** 1210 completed 144 calibration states for 12 fits × three alphas × two
+  horizons × two methods; 168 fast tests passed. Independent mathematical review confirmed
+  score domination, finite-sample ranks, censoring ties and unknown-stratum prediction;
+  bootstrap success-count and stratified-resampling findings fixed and tested.
+- **Caveats:** coverage of min(T, horizon), not unrestricted T. IPCW is assumption-dependent;
+  unavailable tail support is retained explicitly. Native Bayesian intervals remain separate.
+- **Next:** job 1211 passed `make check` (168) and `make test-all` (170), then opened final
+  evaluation under a fixed plan. No model/preprocessing/calibration changes after this point.
+
+### 2026-09-29 — Codex — Checkpoint 2: complete training model matrix
+- **Changed:** shared model interface, Cox/PH score tests, untuned RSF, Bayesian Weibull
+  and lognormal AFT, strict MCMC gate, frozen fit index and training-only sensitivities;
+  hypothetical-profile credible bands versus individual predictive intervals.
+- **Verified:** SLURM 1204 `make format && make check` (163 passed, 2 slow deselected),
+  real data/split/EDA reuse and all 16 fits completed. All eight Bayesian fits passed
+  unchanged R-hat/ESS/zero-divergence gates. SLURM 1210 check: 168 passed; eight hypothetical
+  profiles generated 16 PDF/PNG files. Calibration continues in the same job.
+- **Failure resolved:** 1187 OS molecular chain stuck at initialization (1,000 divergences,
+  R-hat 1.529); finite log probability concealed non-finite gradients. Seeded bounded
+  prior-centered starts plus finite-gradient preflight fixed it (focused job 1200: R-hat
+  1.004, bulk ESS 2,313, tail ESS 2,415, zero divergences). Prior fits archived, then the
+  entire matrix refitted with common settings. Priors and diagnostic thresholds unchanged.
+- **Review:** independent orchestration review found no leakage; source/protocol binding,
+  prediction-cache integrity and gate-status propagation findings fixed. Integration job
+  1207 caught source files being added during its cache-recovery test; stable rerun 1210 passes.
+- **Caveats:** PH/PPC assumptions must be discussed with results; passing MCMC is not
+  evidence of a correct likelihood family. Real test remains unopened; no commits/pushes.
+- **Next:** complete calibration, freeze evaluation code and run stage 05 once.
+
+### 2026-09-29 — Codex — Checkpoint 1: real data and training EDA
+- **Changed:** validated source loading/cohort preparation; frozen physical partition tables;
+  train-only preprocessing and EDA; deterministic source archives; analysis decisions.
+- **Verified:** SLURM 1185 ran `make format && make check` (96 passed), stages 01/02 and
+  EDA; 1,979 eligible patients, split 989/495/495, 18 figure files. Synthetic split archived.
+  SLURM 1186 ran `make format && make check` (149 passed, 2 slow deselected, including
+  newly integrated model/conformal unit tests), then reused stage 02 without redrawing.
+- **Review:** independent data/leakage review found no endpoint or leakage errors; fixed
+  required raw-checksum validation and stage-02 source-archive provenance findings.
+- **Caveats:** runs record dirty Git plus immutable source/config archives. Models have not
+  yet been fitted to real data; no real test evaluation. Generated files remain ignored.
+- **Next:** continue active claim through model fitting, conformal evaluation and exports.
 
 ### 2026-09-29 — Codex — Stage 02 frozen stratified splits
 - **Changed:** `src/brca/data/splits.py`, `src/brca/manifest.py`, stage-02 CLI, string-ID
