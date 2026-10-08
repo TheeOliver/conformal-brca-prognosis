@@ -19,8 +19,10 @@ import pandas as pd
 
 from brca.config import PROJECT_ROOT, load_config
 from brca.data.load import load_cohort
+from brca.data.partitions import freeze_partition_tables
 from brca.data.schema import validate
 from brca.manifest import git_state, package_versions, sha256_file, write_json_exclusive
+from brca.pipeline import _source_archive
 
 SPLIT_NAMES = ("train", "calibration", "test")
 SCHEMA_VERSION = 1
@@ -145,7 +147,7 @@ def run_split_stage(
     if state["git_dirty"] and not allow_dirty:
         raise ValueError(
             "Working tree is dirty or has no commits; --allow-dirty is required "
-            "for a development run whose outputs are not thesis results."
+            "to preserve an explicit source snapshot for this run."
         )
     if synthetic and input_path is not None:
         raise ValueError("Choose --synthetic or --input, not both.")
@@ -193,13 +195,19 @@ def run_split_stage(
         except FileExistsError:
             document = _read_frozen(split_path, metadata, cohort)
             reused = True
+    partition_metadata = freeze_partition_tables(cohort, document, split_path)
     timestamp = datetime.now(UTC)
+    source_hash, source_archive = _source_archive(
+        project_root, project_root / config.paths.outputs / "manifests"
+    )
     manifest = {
         "schema_version": SCHEMA_VERSION,
         "stage": "02_make_splits",
         "timestamp_utc": timestamp.isoformat(),
         **state,
         "allow_dirty": allow_dirty,
+        "source_sha256": source_hash,
+        "source_archive": str(source_archive),
         "config_sha256": config_hash,
         "config_path": str(config_path),
         "package_versions": package_versions(),
@@ -211,6 +219,7 @@ def run_split_stage(
         "split_path": str(split_path.resolve()),
         "split_sha256": sha256_file(split_path),
         "split_reused": reused,
+        "partition_metadata": partition_metadata,
         "split_sizes": {name: len(ids) for name, ids in document["splits"].items()},
         "wall_clock_seconds": perf_counter() - started,
     }

@@ -42,13 +42,35 @@ feature_sets:
 
 # --- Outcome -----------------------------------------------------------------
 outcome:
+  primary_endpoint: disease_specific
+  sensitivity_endpoints: [overall]
   time_column: survival_months # months, per METABRIC convention
   event_column: event # bool: True = event observed, False = right-censored
-  administrative_censoring_months: 300.0
+  administrative_censoring_months: null # retain full follow-up; CP/evaluation have separate horizons
+
+preprocessing:
+  numeric_columns: [age_at_diagnosis, tumor_size, lymph_nodes_positive]
+  categorical_columns: [tumor_grade, er_status, pr_status, her2_status, pam50_subtype]
+  numeric_imputation: median
+  add_missing_indicators: true
+  unknown_category: unknown
+  retain_claudin_low: true
+
+eda:
+  minimum_group_size: 10
+  histogram_bins: 20
+  quantiles: [0.0, 0.25, 0.5, 0.75, 1.0]
+  followup_horizons_months: [60, 120, 180, 240, 300]
+  km_confidence_level: 0.95
 
 # --- Conformal prediction ----------------------------------------------------
 # alpha is MISCOVERAGE: 0.20 -> 80% nominal coverage.
 conformal:
+  horizon_months: 300.0
+  horizons_months: [300.0, 120.0]
+  primary_horizon_months: 300.0
+  methods: [conservative, ipcw_sensitivity]
+  min_censoring_survival: 0.05
   alphas: [0.20, 0.10, 0.05]
   # Subgroups for conditional-coverage reporting. Marginal coverage can be
   # perfect while a subgroup is badly under-covered -- that is the equity
@@ -64,9 +86,23 @@ evaluation:
   # the training and the evaluation set.
   time_grid_percentiles: [10, 20, 30, 40, 50, 60, 70, 80, 90]
   bootstrap_replicates: 1000
+  confidence_level: 0.95
+  maximum_horizon_months: 120.0
+  minimum_bootstrap_success_fraction: 0.90
+  primary_metric: uno_c
+
+cox:
+  alpha: 0.0
+  ties: breslow
+  n_iter: 100
+  tol: 1.0e-9
+  ph_diagnostic_transform: log
+  ph_diagnostic_alpha: 0.05
 
 # --- Bayesian sampler --------------------------------------------------------
 mcmc:
+  init: adapt_diag
+  initialization_jitter_fraction: 0.1
   chains: 4
   tune: 1000
   draws: 1000
@@ -79,12 +115,39 @@ mcmc:
     min_ess_tail: 400
     max_divergences: 0
 
+bayesian:
+  prior_time_histogram_bins: 40
+  prior_predictive_draws: 500
+  predictive_draws: 400
+  predictive_interval_probability: 0.90
+  ppc_time_grid_months: [12, 24, 36, 60, 120, 180, 240, 300]
+  prior_intercept_mu: 4.787491742782046 # log(120 months)
+  prior_intercept_sigma: 0.5
+  prior_coefficient_sigma: 0.35
+  prior_log_shape_mu: 0.4054651081081644 # log(1.5)
+  prior_log_shape_sigma: 0.35
+  prior_lognormal_sigma_scale: 0.75
+  sensitivity_coefficient_sigma: 0.7
+  sensitivity_intercept_sigma: 0.75
+  prior_plausible_time_bounds_months: [0.01, 1200]
+  prior_max_extreme_fraction: 0.20
+  quantile_bisection_iterations: 80
+
 # --- Random Survival Forest --------------------------------------------------
 # Deliberately untuned: instructions.md rules out hyperparameter optimisation.
 rsf:
   n_estimators: 500
   min_samples_leaf: 15
   max_features: sqrt
+  min_samples_split: 10
+  n_jobs: 1
+
+figures:
+  width_inches: 6.3
+  height_inches: 4.0
+  dpi: 300
+  font_size: 9
+  line_width: 1.6
 
 # --- Paths -------------------------------------------------------------------
 paths:
