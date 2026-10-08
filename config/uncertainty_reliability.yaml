@@ -1,0 +1,6 @@
+# Post hoc improvement protocol, fixed before this experiment's test access.
+# Seed, split, alpha values, horizons and evaluation bootstraps inherit default.yaml.
+ridge_alpha: 1.0
+ridge_bootstrap_replicates: 1000
+diagnostic_bootstrap_replicates: 100
+report_alpha: 0.10
