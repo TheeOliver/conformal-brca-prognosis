@@ -66,10 +66,11 @@ Always `uv run <cmd>`, never bare `python`/`pytest` — system Python 3.10 has n
    arguments). Read for approach; never copy code from them.
 8. **The conformal layer is hand-written** (no Python library handles censoring). Every
    nonconformity score needs a unit test asserting coverage.
-9. **Real data is on disk; the pipeline does not use it yet.** `make download` fetched the
+9. **The pipeline uses the real clinical cohort.** `make download` fetched the
    public cBioPortal clinical tables into `data/raw/cbioportal_brca_metabric/` (immutable;
-   `docs/metabric-data-dictionary.md`). Until stage 01 is implemented everything runs on the
-   synthetic fixture — and synthetic numbers are never results.
+   `docs/metabric-data-dictionary.md`). Stage 01 prepares the registered DSS/OS cohort;
+   the development split is archived. Tests use synthetic fixtures, never real patients,
+   and synthetic numbers are never results.
 10. **Committing and pushing are the user's.** Draft commands and messages
     (`git-commit-and-pr` skill); never run `git commit`, `git push` or `gh pr create` unless
     told to in that turn. Commit messages and PR text never carry AI attribution.

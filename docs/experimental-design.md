@@ -21,21 +21,23 @@ and it is spent the moment it influences any modelling decision.
 
 ### Running stage 02
 
-Stage 02 is lightweight and may run on the login node. While stage 01 is still a stub,
-explicitly select the synthetic fixture:
+The real-data preparation and split stages are implemented. Submit them through SLURM:
 
 ```bash
-make test  # generates the synthetic fixture if missing
-make split SPLIT_ARGS="--synthetic --allow-dirty"
+sbatch scripts/slurm/run_stage.sh 01
+# After stage 01 completes successfully:
+sbatch scripts/slurm/run_stage.sh 02
 ```
 
 This writes `data/processed/splits.json` and
-`outputs/manifests/02_make_splits_<UTC timestamp>.json`. These are **synthetic development
-artefacts, never thesis results**. `--allow-dirty` explicitly permits the current uncommitted
-setup; the manifest records `git_dirty: true` and `git_sha: null` until the first commit.
+`outputs/manifests/02_make_splits_<UTC timestamp>.json`. For isolated development only,
+`--synthetic` selects the test fixture; never replace the real-data split with a synthetic
+split. Synthetic outputs are **development artefacts, never thesis results**.
+`--allow-dirty` explicitly permits an uncommitted source tree; the manifest records
+`git_dirty: true`, the baseline Git SHA and an immutable source/config archive.
 Without that flag, a dirty tree or an unborn HEAD fails before writing anything.
 
-Once stage 01 exists, `make split` expects `<paths.processed>/cohort.csv`. An explicit
+`make split` expects `<paths.processed>/cohort.csv`. An explicit
 `--input /path/to/cohort.csv` is also supported. Inputs always go through `load_cohort` and
 schema validation. There is no automatic fallback to synthetic data. Relative paths in the
 configuration are relative to the repository; relative `--input` paths are relative to the
@@ -96,7 +98,33 @@ whenever RSF is compared against the other two.
 RQ6 is the thesis' point: discrimination and trustworthy uncertainty are different properties
 and need not coincide.
 
-## TODO once results exist
+## Completed analysis (2026-09-29)
 
-- [ ] Record the realised split sizes and event rates per set.
-- [ ] Record the conclusion for each RQ here, including null results.
+The subsequent [uncertainty reliability experiment](uncertainty-reliability.md) is a
+post hoc extension on the same split: 72 conservative lower-bound settings and 24
+fixed-ridge Qin settings. It has its own source-bound plan and does not redefine
+the primary endpoint, horizon, models or conclusions by test-driven selection.
+
+Realised partition counts and event rates are recorded in the stage-02 manifests.
+All six RQ conclusions, including uncertain comparisons and limitations, are in
+`outputs/reports/thesis_results.md` and `outputs/metrics/research_answers.json`;
+`docs/final-review.md` provides the versioned summary and verification record.
+
+## Implemented protocol
+
+The user selected DSS primary and OS sensitivity. The prepared cohort contains 1,979
+patients; the frozen split is 989/495/495. Both endpoints and feature arms use the same
+DSS-event-stratified assignments. Training and downstream stages load physically separate
+partition tables, whose bytes and membership are checked before use.
+
+See `analysis-decisions.md` for missing predictors, claudin-low, follow-up and competing-risk
+interpretation. There are 12 primary fits (three models × two feature arms × two endpoints)
+and four DSS Bayesian sensitivity fits (alternative prior and lognormal family × two arms).
+The evaluation grid and conformal target horizons are selected before test access.
+
+Stage05 freezes code, configuration, model and calibration hashes before loading test once.
+It writes an integrity-checked local cache for interruption recovery, and stages03/04 then
+refuse refitting or recalibration. Patient-level caches remain ignored. Bootstrap resampling
+preserves the primary event-stratum counts and pairs the feature arms. Results and generated
+RQ answers are written under `outputs/metrics/` and `outputs/reports/`; their final verified
+conclusions are linked from STATUS.md. Execution instructions: `pipeline-runbook.md`.
