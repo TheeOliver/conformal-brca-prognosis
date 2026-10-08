@@ -60,3 +60,22 @@ A difference within bootstrap noise is not a difference. Say so.
 `references/notebooks_reference/Evaluating Survival Models guide (...).md` — quote the filename
 in shell commands, and per `.claude/rules/notebooks.md` treat its code as lossy: read for the
 API surface, never copy.
+
+## Implemented analysis
+
+The training-derived interior grid is capped at 120 months and shared across all models and
+feature arms. In this run its first point is 28.973 months: IBS integrates from 28.973 to 120,
+not from time zero. Follow-up later than the grid ceiling remains useful for fitting and is
+capped just above the metric ceiling for scoring, retaining later survivors as controls.
+
+The bootstrap retains primary-DSS event-stratum counts, including in OS sensitivity, and
+uses identical patient draws for paired comparisons. It conditions on fitted models,
+calibration and training censoring estimates. Undefined bootstrap draws are counted;
+insufficient success suppresses CIs, and any retained partial-success CI is labelled
+conditional and approximate. The actual performance run had 1,000/1,000 successful replicates.
+
+Censored latent coverage is not directly observed. Report observable lower/upper coverage
+bounds and their uncertainty, separate assumption-dependent IPCW estimates, and widths.
+DSS at 300 months IPCW is unsupported by the registered censoring-survival threshold; retain the
+prespecified 120-month sensitivity and report the limitation without choosing a new horizon.
+See `evaluation-implementation.md`, `conformal-methods.md` and `analysis-decisions.md`.

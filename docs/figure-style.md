@@ -66,9 +66,10 @@ table beneath aligned to the x-ticks, and a shaded confidence band at low alpha.
 each curve at its right-hand end rather than relying on the legend.
 
 **Coverage vs nominal.** Nominal on x, empirical on y, with the **y = x reference line in
-grey** so over- and under-coverage read at a glance. Binomial confidence intervals as error
-bars — a point at 0.88 on 200 patients is not distinguishable from 0.90, and the figure should
-show that rather than implying a miss.
+grey** so over- and under-coverage read at a glance. With censored event times, distinguish
+observable coverage bounds from IPCW estimates and their paired bootstrap intervals.
+Do not draw binomial error bars around an unobserved latent coverage rate. Label absent
+IPCW support explicitly; retain the corresponding width panel.
 
 **Coverage paired with width.** **Two stacked panels sharing the x-axis** — never a dual-axis
 chart. Two y-scales on one plot is the most common chart error there is, and here it would
