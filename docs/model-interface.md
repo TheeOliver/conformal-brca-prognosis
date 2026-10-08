@@ -47,6 +47,14 @@ mean discards exactly what RQ4 asks about.
 ## Registration
 
 1. Module at `src/brca/models/<name>.py`, one model per file.
-2. Register in `src/brca/models/__init__.py`.
+2. Register in `src/brca/fitting.py::MODEL_TYPES`.
 3. Config block named after the model in `config/default.yaml`.
 4. It must run for **both** feature sets, or the RQ2 comparison has a hole.
+
+## Implemented registry and quantiles (2026-09-29)
+
+`src/brca/fitting.py::MODEL_TYPES` is the pipeline registry. Models also implement
+`predict_quantiles(X, probabilities)` returning an n×p array in months. Cox/RSF quantiles
+unidentified beyond observed support return positive infinity. Stage04/05 transform both
+bounds to the prespecified restricted target before conformal calibration/evaluation.
+Bayesian quantiles invert the posterior-mixture CDF and keep unrestricted tails explicit.
