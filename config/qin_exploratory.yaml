@@ -1,0 +1,5 @@
+# Post hoc published-method comparator. Does not alter the frozen primary protocol.
+# Alpha, horizons, endpoint and feature arms are inherited from default.yaml.
+bootstrap_replicates: 1000
+minimum_bootstrap_success_fraction: 0.90
+minimum_censoring_survival_for_event_pool: 0.0
