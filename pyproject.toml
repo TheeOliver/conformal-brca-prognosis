@@ -18,6 +18,8 @@ dependencies = [
     # InferenceData container we persist fits into.
     "pymc>=5.16",
     "arviz>=0.18",
+    "h5netcdf>=1.3",
+    "h5py>=3.11",
 ]
 
 # NOTE: there is intentionally no conformal-prediction dependency.
